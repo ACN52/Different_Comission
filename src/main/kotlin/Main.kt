@@ -7,8 +7,6 @@ fun main() {
     val limitSutki = 150_000
     val limitMonth = 600_000
 
-    var typeCard = "Мир" // тип карты (по умолчанию Мир)
-
     val limitMastercard = 75000 // с карты Mastercard комиссия не взимается, пока не превышен месячный лимит
     val comissionMastercard = 0.6 / 100 // 0,6%
     val comissionMastercard20 = 20 // 20 руб
@@ -19,66 +17,57 @@ fun main() {
     val comissionMir = 0 // с карты Мир комиссия не взимается
     // --------------------
 
+    // Функция о превышении лимитов
     // --------------------
-    fun calculationAlgorithmComission(typeCard: String, previousTransfer: Int, currentTransfer: Int): Int {
+    fun limitOver(previousTransfer: Int, currentTransfer: Int): Boolean {
+        if (previousTransfer + currentTransfer > limitMonth) {
+            println("Операция отклонена -> Превышен лимит переводов за месяц!")
+            return false
+        }
+        if (currentTransfer > limitSutki) {
+            println("Операция отклонена -> Превышен лимит переводов за сутки!")
+            return false
+        }
+        return true
+    }
 
-        var itogComission = 0 // Объявляем <itogComission> локальной переменноЙ, чтобы
-                                // комиссия пересчитывалась заново при каждом вызове функции.
-        var limitSutkiCount = 0  // Считаем сумму перевода за сутки
-        var limitMonthCount = 0  // Считаем сумму перевода за месяц
+    // --------------------
+
+    // --------------------
+    fun calculationAlgorithmComission(typeCard: String = "Мир", previousTransfer: Int = 0, currentTransfer: Int = 0): Int {
+
+        // Проверяем превышение лимитов
+        if  (!limitOver(previousTransfer, currentTransfer)) {
+            return 0
+        }
 
         if (typeCard == "Мир") {
-            if ((limitSutkiCount + previousTransfer + currentTransfer) > limitSutki) {
-                println("Операция отклонена -> Превышен лимит переводов за сутки !")
-                return 0 // Прерываем выполнение функции
-            } else if (limitMonthCount + previousTransfer + currentTransfer > limitMonth) {
-                println("Операция отклонена -> Превышен лимит переводов за месяц !")
-                return 0
-            } else {
-                limitSutkiCount = limitSutkiCount + currentTransfer
-                limitMonthCount = limitMonthCount + currentTransfer
-                itogComission = comissionMir
+            return comissionMir
+
+        } else if (typeCard == "Mastercard") {
+            // Льготный порог превышен ранее
+            if (previousTransfer > limitMastercard) {
+                return (currentTransfer * comissionMastercard).toInt() + comissionMastercard20
             }
-        }
-
-        if (typeCard == "Mastercard") {
-            if ((limitSutkiCount  + previousTransfer + currentTransfer) > limitSutki) {
-                println("Операция отклонена -> Превышен лимит переводов за сутки !")
-                return 0 // Прерываем выполнение функции
-            } else if (limitMonthCount  + previousTransfer + currentTransfer > limitMonth) {
-                println("Операция отклонена -> Превышен лимит переводов за месяц !")
-                return 0
-            } else {
-                limitSutkiCount = limitSutkiCount + currentTransfer
-                limitMonthCount = limitMonthCount + currentTransfer
-                if (limitSutkiCount > limitMastercard) {
-                    val limitUp = limitSutkiCount - limitMastercard
-                    itogComission = (limitUp * comissionMastercard).toInt() + comissionMastercard20
-                } else {
-                    itogComission = 0
-                }
+            // Льготный порог превышается текущим платежом
+            else if (previousTransfer + currentTransfer > limitMastercard) {
+                val limitUp = (previousTransfer + currentTransfer) - limitMastercard
+                return (limitUp * comissionMastercard).toInt() + comissionMastercard20
             }
-        }
-
-        if (typeCard == "Visa") {
-            if ((limitSutkiCount  + previousTransfer + currentTransfer) > limitSutki) {
-                println("Операция отклонена -> Превышен лимит переводов за сутки !")
-                return 0 // Прерываем выполнение функции
-            } else if ((limitMonthCount  + previousTransfer + currentTransfer) > limitMonth) {
-                println("Операция отклонена -> Превышен лимит переводов за месяц !")
+            // Льготный порог не превышается
+            else {
                 return 0
-            } else {
-                limitSutkiCount = limitSutkiCount + currentTransfer
-                limitMonthCount = limitMonthCount + currentTransfer
-
-                itogComission = (currentTransfer * comissionVisa).toInt()
-
-                if (itogComission < minComissionVisa) itogComission = minComissionVisa
             }
+
+        } else if (typeCard == "Visa") {
+            var itogComission = (currentTransfer * comissionVisa).toInt()
+            if (itogComission < minComissionVisa) itogComission = minComissionVisa
+            return itogComission
+
+        } else {
+            print("Ошибка -> Карта в системе не найдена !")
+            return 0
         }
-
-        return itogComission
-
     }
     // --------------------
 
